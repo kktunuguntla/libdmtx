@@ -137,6 +137,12 @@ RsEncode(DmtxMessage *message, int sizeIdx)
    return DmtxPass;
 }
 
+static double
+calculateUEC(int errorCount, int erasures, int ecap)
+{
+   return 1.0 - ((erasures + 2 * errorCount)/(double)ecap);
+}
+
 /**
  * Decode xyz.
  * More detailed description.
@@ -148,7 +154,7 @@ RsEncode(DmtxMessage *message, int sizeIdx)
 #undef CHKPASS
 #define CHKPASS { if(passFail == DmtxFail) return DmtxFail; }
 static DmtxPassFail
-RsDecode(unsigned char *code, int sizeIdx, int fix)
+RsDecode(unsigned char *code, int sizeIdx, int fix, int *errorCount)
 {
    int i;
    int blockStride, blockIdx;
@@ -212,14 +218,14 @@ RsDecode(unsigned char *code, int sizeIdx, int fix)
             return DmtxFail;
 
          /* Find error positions (loc) */
-         repairable = RsFindErrorLocations(&loc, &elp);
+         repairable = RsFindErrorLocations(&loc, &elp, errorCount);
          if(!repairable)
             return DmtxFail;
 
          /* Find error values and repair */
          RsRepairErrors(&rec, &loc, &elp, &syn);
       }
-
+      
       /*
        * Overwrite output with correct/corrected values
        */
@@ -410,10 +416,11 @@ RsFindErrorLocatorPoly(DmtxByteList *elpOut, const DmtxByteList *syn, int errorW
 #undef CHKPASS
 #define CHKPASS { if(passFail == DmtxFail) return DmtxFalse; }
 static DmtxBoolean
-RsFindErrorLocations(DmtxByteList *loc, const DmtxByteList *elp)
+RsFindErrorLocations(DmtxByteList *loc, const DmtxByteList *elp, int *errorCount)
 {
    int i, j;
    int lambda = elp->length - 1;
+   *errorCount = 0;
    DmtxPassFail passFail;
    DmtxByte q, regStorage[MAX_ERROR_WORD_COUNT];
    DmtxByteList reg = dmtxByteListBuild(regStorage, sizeof(regStorage));
@@ -432,6 +439,7 @@ RsFindErrorLocations(DmtxByteList *loc, const DmtxByteList *elp)
       if(q == 0)
       {
          dmtxByteListPush(loc, NN - i, &passFail); CHKPASS;
+         (*errorCount)++;
       }
    }
 

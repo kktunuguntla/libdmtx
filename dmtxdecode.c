@@ -402,7 +402,7 @@ dmtxDecodePopulatedArray(int sizeIdx, DmtxMessage *msg, int fix)
     
    ModulePlacementEcc200(msg->array, msg->code, sizeIdx, DmtxModuleOnRed | DmtxModuleOnGreen | DmtxModuleOnBlue);
 
-   if(RsDecode(msg->code, sizeIdx, fix) == DmtxFail){
+   if(RsDecode(msg->code, sizeIdx, fix, msg->errorCount) == DmtxFail){
       dmtxMessageDestroy(&msg);
       msg = NULL;
       return NULL;
