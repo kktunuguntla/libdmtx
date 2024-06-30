@@ -137,10 +137,17 @@ RsEncode(DmtxMessage *message, int sizeIdx)
    return DmtxPass;
 }
 
+/**
+ * Calculate UEC(Unused Error Correction)
+ * \param errorCount
+ * \param erasures
+ * \param ecap
+ */
 static double
 calculateUEC(int errorCount, int erasures, int ecap)
 {
-   return 1.0 - ((erasures + 2 * errorCount)/(double)ecap);
+   double UEC =  1.0 - ((double)(erasures + 2 * errorCount)/ecap);
+   return (UEC < 0) ? 0 : (UEC > 1) ? 1 : UEC; 
 }
 
 /**
@@ -154,7 +161,7 @@ calculateUEC(int errorCount, int erasures, int ecap)
 #undef CHKPASS
 #define CHKPASS { if(passFail == DmtxFail) return DmtxFail; }
 static DmtxPassFail
-RsDecode(unsigned char *code, int sizeIdx, int fix, int *errorCount)
+RsDecode(unsigned char *code, int sizeIdx, int fix, double *uec)
 {
    int i;
    int blockStride, blockIdx;
@@ -179,6 +186,8 @@ RsDecode(unsigned char *code, int sizeIdx, int fix, int *errorCount)
    symbolDataWords = dmtxGetSymbolAttribute(DmtxSymAttribSymbolDataWords, sizeIdx);
    symbolErrorWords = dmtxGetSymbolAttribute(DmtxSymAttribSymbolErrorWords, sizeIdx);
    symbolTotalWords = symbolDataWords + symbolErrorWords;
+
+   double minUEC = 1.0;
 
    /* For each interleaved block */
    for(blockIdx = 0; blockIdx < blockStride; blockIdx++)
@@ -218,12 +227,21 @@ RsDecode(unsigned char *code, int sizeIdx, int fix, int *errorCount)
             return DmtxFail;
 
          /* Find error positions (loc) */
-         repairable = RsFindErrorLocations(&loc, &elp, errorCount);
+         repairable = RsFindErrorLocations(&loc, &elp);
          if(!repairable)
             return DmtxFail;
 
          /* Find error values and repair */
          RsRepairErrors(&rec, &loc, &elp, &syn);
+
+         /* Compute UEC in the block */
+         double blockUEC = calculateUEC(loc.length, 0, blockMaxCorrectable );
+         minUEC = (blockUEC < minUEC) ? blockUEC : minUEC;
+      }
+      else
+      {
+         /* No errors in the block */
+         minUEC = 1.0;
       }
       
       /*
@@ -247,6 +265,7 @@ RsDecode(unsigned char *code, int sizeIdx, int fix, int *errorCount)
       }
    }
 
+   *uec = minUEC;
    return DmtxPass;
 }
 
@@ -416,11 +435,10 @@ RsFindErrorLocatorPoly(DmtxByteList *elpOut, const DmtxByteList *syn, int errorW
 #undef CHKPASS
 #define CHKPASS { if(passFail == DmtxFail) return DmtxFalse; }
 static DmtxBoolean
-RsFindErrorLocations(DmtxByteList *loc, const DmtxByteList *elp, int *errorCount)
+RsFindErrorLocations(DmtxByteList *loc, const DmtxByteList *elp)
 {
    int i, j;
    int lambda = elp->length - 1;
-   *errorCount = 0;
    DmtxPassFail passFail;
    DmtxByte q, regStorage[MAX_ERROR_WORD_COUNT];
    DmtxByteList reg = dmtxByteListBuild(regStorage, sizeof(regStorage));
@@ -439,7 +457,6 @@ RsFindErrorLocations(DmtxByteList *loc, const DmtxByteList *elp, int *errorCount
       if(q == 0)
       {
          dmtxByteListPush(loc, NN - i, &passFail); CHKPASS;
-         (*errorCount)++;
       }
    }
 
