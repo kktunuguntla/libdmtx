@@ -16,7 +16,7 @@ else()
   set_target_properties(dmtx PROPERTIES
                                 VERSION ${PROJECT_VERSION}
                                 SOVERSION ${PROJECT_VERSION_MAJOR})
-  target_link_libraries(dmtx PUBLIC -lm)
+  target_link_libraries(dmtx PUBLIC -lm -lpng)
 endif()
 
 set_target_properties(dmtx PROPERTIES PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/dmtx.h")
