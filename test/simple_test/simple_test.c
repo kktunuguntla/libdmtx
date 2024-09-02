@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 
    /* 1) ENCODE a new Data Matrix barcode image (in memory only) */
 
-   enc = dmtxEncodeCreate();
+   // enc = dmtxEncodeCreate();
 
    /*
     dmtxEncodeSetProp( enc, DmtxPropPixelPacking, DmtxPack16bppRGB );
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
 
    // dmtxEncodeDestroy(&enc);
 
-   FILE *fp = fopen("datamatrix_2d_8.png", "rb");
+   FILE *fp = fopen("./images/datamatrix_2d_8.png", "rb");
    if (!fp)
    {
       perror("File opening failed");
@@ -218,10 +218,19 @@ int main(int argc, char *argv[])
 
    img = dmtxImageCreate(pxl, width, height, DmtxPack24bppRGB);
    assert(img != NULL);
+   fprintf(stdout, "Dmtx Image created \n");
 
    dec = dmtxDecodeCreate(img, 1);
    assert(dec != NULL);
-
+   fprintf(stdout, "Preprocessed image: \n");
+   // DmtxImage *image = dec->image;
+   // unsigned char *pixel = image->pxl;
+   // for (int i=0; i<width*height; i++){
+   //    fprintf(stdout, "%d", (pixel[i*3])==0);
+   //    if (i%width==width-1){
+   //       fprintf(stdout, "\n");
+   //    }
+   // } 
    reg = dmtxRegionFindNext(dec, NULL);
    fprintf(stdout, "reg->symbolRows: \"%d\"\n", reg->symbolRows);
    fprintf(stdout, "reg->symbolCols: \"%d\"\n", reg->symbolCols);
@@ -290,6 +299,8 @@ int main(int argc, char *argv[])
       fprintf(stdout, "msg->arraySize :  \"%zd\"\n", msg->arraySize);
       fprintf(stdout, "msg->codeSize  :  \"%zd\"\n", msg->codeSize);
       fprintf(stdout, "msg->outputSize:  \"%zd\"\n", msg->outputSize);
+      fprintf(stdout, "msg->uec :  \"%f\"\n", *msg->uec);
+
       int oned = sqrt(msg->arraySize);
       for (int i = 0; i < msg->arraySize; i++)
       {
@@ -342,10 +353,13 @@ int main(int argc, char *argv[])
       }
       dmtxRegionDestroy(&reg);
    }
+   else{
+   fprintf(stdout, "Decoding Failed \n");
+   }
 
    dmtxDecodeDestroy(&dec);
    dmtxImageDestroy(&img);
-   free(pxl);
+   free(pxl); 
 
    fprintf(stdout, "%d\n", getSizeIdxFromSymbolDimension(12, 12));
 
