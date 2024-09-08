@@ -249,13 +249,12 @@ RsDecode(unsigned char *code, int sizeIdx, int fix, double *uec)
 
          /* Compute UEC in the block */
          double blockUEC = calculateUEC(loc.length, 0, blockMaxCorrectable );
-         minUEC =  (blockUEC < minUEC) ? blockUEC : minUEC;
-         fprintf(stdout, "UEC: \"%f\" \n", minUEC);
+         *uec =  (blockUEC < minUEC) ? blockUEC : minUEC;
       }
       else
       {
          /* No errors in the block */
-         minUEC = 1.0;
+       *uec = 1.0;
       }
       
       /*
@@ -279,9 +278,6 @@ RsDecode(unsigned char *code, int sizeIdx, int fix, double *uec)
       }
    }
 
-   fprintf(stdout, "UEC: \"%f\" \n", minUEC);
-   *uec = minUEC;
-   fprintf(stdout, "UEC: \"%f\" \n", *uec);
    return DmtxPass;
 }
 
