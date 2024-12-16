@@ -405,7 +405,7 @@ dmtxDecodePopulatedArray(int sizeIdx, DmtxMessage *msg, int fix)
    ModulePlacementEcc200(msg->array, msg->code, sizeIdx, DmtxModuleOnRed | DmtxModuleOnGreen | DmtxModuleOnBlue);
 
    fprintf(stdout, "libdmtx::dmtxDecodePopulatedArray() \n");
-   if(RsDecode(msg->code, sizeIdx, fix, msg->uec) == DmtxFail){
+   if(RsDecode(msg->code, sizeIdx, fix, &msg->uec) == DmtxFail){
       fprintf(stdout, "RsDecode failed");
       dmtxMessageDestroy(&msg);
       msg = NULL;

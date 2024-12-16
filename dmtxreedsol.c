@@ -249,14 +249,12 @@ RsDecode(unsigned char *code, int sizeIdx, int fix, double *uec)
 
          /* Compute UEC in the block */
          double blockUEC = calculateUEC(loc.length, 0, blockMaxCorrectable );
-         *uec =  (blockUEC < minUEC) ? blockUEC : minUEC;
+         *uec = blockUEC;
+      } else {
+        /* No errors in the block */
+          *uec = 1.0;
       }
-      else
-      {
-         /* No errors in the block */
-       *uec = 1.0;
-      }
-      
+
       /*
        * Overwrite output with correct/corrected values
        */

@@ -69,15 +69,14 @@ dmtxMessageCreate(int sizeIdx, int symbolFormat)
       dmtxMessageDestroy(&message);
       return NULL;
    }
-   
-   message->uec = (double *)malloc(sizeof(double));
-   if(message->uec == NULL) {
-      perror("Malloc failed for uec");
-      dmtxMessageDestroy(&message);
-      return NULL;
-   }
-   *message->uec = 5.0;  // Initialize to 5.0
 
+   // message->uec = (double *)malloc(sizeof(double));
+   // if(message->uec == NULL) {
+   //    perror("Malloc failed for uec");
+   //    dmtxMessageDestroy(&message);
+   //    return NULL;
+   // }
+   message->uec = 5.0;
 
    fprintf(stdout, "Allocated memory for dmtx message \n");
    return message;
