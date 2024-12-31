@@ -60,12 +60,18 @@ extern "C" {
 #define DmtxModuleOnBlue            0x04
 #define DmtxModuleOnRGB             0x07  /* OnRed | OnGreen | OnBlue */
 #define DmtxModuleOn                0x07
-#define DmtxModuleUnsure            0x08
+//#define DmtxModuleUnsure            0x08
+#define DmtxModuleErased            0x08 /* Newly defined for Module is erased */
 #define DmtxModuleAssigned          0x10
 #define DmtxModuleVisited           0x20
 #define DmtxModuleData              0x40
 
 #define DMTX_CHECK_BOUNDS(l,i) (assert((i) >= 0 && (i) < (l)->length && (l)->length <= (l)->capacity))
+
+typedef struct {
+   int *locations;  // Array of erasure positions
+   int count;       // Number of erasures found
+} DmtxErasures;
 
 typedef enum {
    DmtxStatusEncoding, /* Encoding is currently underway */
@@ -397,7 +403,7 @@ typedef struct DmtxMessage_struct {
    int             outputIdx;     /* Internal index used to store output progress */
    int             padCount;
    int             fnc1;          /* Character to represent FNC1, or DmtxUndefined */
-   double          uec; /* Pointer to internal storage of unused error correction */
+   double          uec;            /* Unused error correction */
    unsigned char   *array;         /* Pointer to internal representation of Data Matrix modules */
    unsigned char   *code;          /* Pointer to internal storage of code words (data and error) */
    unsigned char   *output;        /* Pointer to internal storage of decoded output */
@@ -550,7 +556,7 @@ extern int dmtxDecodeGetProp(DmtxDecode *dec, int prop);
 extern /*@exposed@*/ unsigned char *dmtxDecodeGetCache(DmtxDecode *dec, int x, int y);
 extern DmtxPassFail dmtxDecodeGetPixelValue(DmtxDecode *dec, int x, int y, int channel, /*@out@*/ int *value);
 extern DmtxMessage *dmtxDecodeMatrixRegion(DmtxDecode *dec, DmtxRegion *reg, int fix);
-extern DmtxMessage *dmtxDecodePopulatedArray(int sizeIdx, DmtxMessage *msg, int fix);
+extern DmtxMessage *dmtxDecodePopulatedArray(int sizeIdx, DmtxMessage *msg, int fix, DmtxErasures *erasures);
 extern DmtxMessage *dmtxDecodeMosaicRegion(DmtxDecode *dec, DmtxRegion *reg, int fix);
 extern unsigned char *dmtxDecodeCreateDiagnostic(DmtxDecode *dec, /*@out@*/ int *totalBytes, /*@out@*/ int *headerBytes, int style);
 

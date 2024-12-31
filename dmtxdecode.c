@@ -334,12 +334,15 @@ dmtxDecodeMatrixRegion(DmtxDecode *dec, DmtxRegion *reg, int fix)
    DmtxMessage *msg;
    DmtxVector2 topLeft, topRight, bottomLeft, bottomRight;
    DmtxPixelLoc pxTopLeft, pxTopRight, pxBottomLeft, pxBottomRight;
+   DmtxErasures erasures;
+   erasures.locations = (int *)calloc(reg->symbolRows * reg->symbolCols, sizeof(int));
+   erasures.count = 0;
 
    msg = dmtxMessageCreate(reg->sizeIdx, DmtxFormatMatrix);
    if(msg == NULL)
       return NULL;
 
-   if(PopulateArrayFromMatrix(dec, reg, msg) != DmtxPass) {
+   if(PopulateArrayFromMatrix(dec, reg, msg, &erasures) != DmtxPass) {
       dmtxMessageDestroy(&msg);
       return NULL;
    }
@@ -367,7 +370,7 @@ dmtxDecodeMatrixRegion(DmtxDecode *dec, DmtxRegion *reg, int fix)
    CacheFillQuad(dec, pxTopLeft, pxTopRight, pxBottomRight, pxBottomLeft);
 
    fprintf(stdout, "Dmtx message must be return by decoded populated array \n");
-   return dmtxDecodePopulatedArray(reg->sizeIdx, msg, fix);
+   return dmtxDecodePopulatedArray(reg->sizeIdx, msg, fix, &erasures);
 }
 
 /**
@@ -381,7 +384,7 @@ dmtxDecodeMatrixRegion(DmtxDecode *dec, DmtxRegion *reg, int fix)
  *       ex: msg = dmtxDecodePopulatedArray(sizeidx, msg, fix);
  */
 DmtxMessage *
-dmtxDecodePopulatedArray(int sizeIdx, DmtxMessage *msg, int fix)
+dmtxDecodePopulatedArray(int sizeIdx, DmtxMessage *msg, int fix, DmtxErasures *erasures)
 {
    /*
     * Example msg->array indices for a 12x12 datamatrix.
@@ -405,7 +408,8 @@ dmtxDecodePopulatedArray(int sizeIdx, DmtxMessage *msg, int fix)
    ModulePlacementEcc200(msg->array, msg->code, sizeIdx, DmtxModuleOnRed | DmtxModuleOnGreen | DmtxModuleOnBlue);
 
    fprintf(stdout, "libdmtx::dmtxDecodePopulatedArray() \n");
-   if(RsDecode(msg->code, sizeIdx, fix, &msg->uec) == DmtxFail){
+   fprintf(stdout, "erasures->count = %d \n", erasures->count);
+   if(RsDecode(msg->code, sizeIdx, fix, &msg->uec, erasures) == DmtxFail){
       fprintf(stdout, "RsDecode failed");
       dmtxMessageDestroy(&msg);
       msg = NULL;
@@ -418,6 +422,7 @@ dmtxDecodePopulatedArray(int sizeIdx, DmtxMessage *msg, int fix)
       return NULL;
    }
 
+   free(erasures->locations);
    return msg;
 }
 
@@ -697,7 +702,7 @@ TallyModuleJumps(DmtxDecode *dec, DmtxRegion *reg, int tally[][24], int xOrigin,
  * \return DmtxPass | DmtxFail
  */
 static DmtxPassFail
-PopulateArrayFromMatrix(DmtxDecode *dec, DmtxRegion *reg, DmtxMessage *msg)
+PopulateArrayFromMatrix(DmtxDecode *dec, DmtxRegion *reg, DmtxMessage *msg, DmtxErasures *erasures)
 {
    //fprintf(stdout, "libdmtx::PopulateArrayFromMatrix()\n");
    int weightFactor;
@@ -708,6 +713,8 @@ PopulateArrayFromMatrix(DmtxDecode *dec, DmtxRegion *reg, DmtxMessage *msg)
    int mapCol, mapRow;
    int colTmp, rowTmp, idx;
    int tally[24][24]; /* Large enough to map largest single region */
+   double erasureThresholdLow = 0.4; // Extreme low threshold for erasure detection
+   double erasureThresholdHigh = 0.6; // Extreme high threshold for erasure detection
 
 /* memset(msg->array, 0x00, msg->arraySize); */
 
@@ -765,6 +772,7 @@ PopulateArrayFromMatrix(DmtxDecode *dec, DmtxRegion *reg, DmtxMessage *msg)
          for(mapRow = 0; mapRow < mapHeight; mapRow++) {
          //for(mapRow = mapHeight-1; mapRow >= 0; mapRow--) {
             for(mapCol = 0; mapCol < mapWidth; mapCol++) {
+               double confidence = tally[mapRow][mapCol]/(double)weightFactor;
                
                rowTmp = (yRegionCount * mapHeight) + mapRow;
                rowTmp = yRegionTotal * mapHeight - rowTmp - 1;
@@ -781,6 +789,27 @@ PopulateArrayFromMatrix(DmtxDecode *dec, DmtxRegion *reg, DmtxMessage *msg)
                }
 
                msg->array[idx] |= DmtxModuleAssigned;
+               // Check if module confidence is in extreme ranges indicating potential damage
+               if(confidence < erasureThresholdLow || confidence > erasureThresholdHigh) {
+                  // Mark this module as both erased and processed in the message array
+                  msg->array[idx] = DmtxModuleErased | DmtxModuleAssigned;
+                  
+                  // Convert the module's physical position to its corresponding codeword position
+                  // using Data Matrix ECC 200 mapping rules
+                  int codewordPosition = MapDataModuleToCodeword(reg->sizeIdx, rowTmp, colTmp);
+                  // If this module is part of the data region (not alignment pattern)
+                  // store its position for Reed-Solomon error correction
+                  if(codewordPosition != DmtxUndefined) {
+                      erasures->locations[erasures->count++] = codewordPosition;
+                  }
+               } else {
+                  // Module has normal confidence level - determine if it's ON or OFF
+                  // confidence >= 0.5 means module is ON (dark)
+                  // confidence < 0.5 means module is OFF (light)
+                  msg->array[idx] = (confidence >= 0.5) ? 
+                      (DmtxModuleOnRGB | DmtxModuleAssigned) : 
+                      (DmtxModuleOff | DmtxModuleAssigned);
+               }
             }
             //fprintf(stdout, "\n");
          }
@@ -788,4 +817,26 @@ PopulateArrayFromMatrix(DmtxDecode *dec, DmtxRegion *reg, DmtxMessage *msg)
    }
 
    return DmtxPass;
+}
+
+static int 
+MapDataModuleToCodeword(int sizeIdx, int row, int col)
+{
+    int dataRegionRows = dmtxGetSymbolAttribute(DmtxSymAttribDataRegionRows, sizeIdx);
+    int dataRegionCols = dmtxGetSymbolAttribute(DmtxSymAttribDataRegionCols, sizeIdx);
+    int interleavedBlocks = dmtxGetSymbolAttribute(DmtxSymAttribInterleavedBlocks, sizeIdx);
+    
+    // Calculate region coordinates
+    int regionRow = row / dataRegionRows;
+    int regionCol = col / dataRegionCols;
+    
+    // Calculate module position within region
+    int moduleRow = row % dataRegionRows;
+    int moduleCol = col % dataRegionCols;
+    
+    // Calculate codeword position using standard Data Matrix mapping
+    int codewordPosition = (moduleRow * dataRegionCols + moduleCol) * interleavedBlocks;
+    codewordPosition += (regionRow * dataRegionCols + regionCol);
+    
+    return codewordPosition;
 }

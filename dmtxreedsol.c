@@ -139,6 +139,10 @@ RsEncode(DmtxMessage *message, int sizeIdx)
 
 /**
  * Calculate UEC(Unused Error Correction)
+ * More detailed description.
+ * Errors (( t )): These are incorrect codewords detected during the decoding process.
+ * Erasures (( e )): These are locations where the codewords are known to be missing or unreadable.
+ * Error correction capability (( ecap )): This is the maximum number of errors that can be corrected.
  * \param errorCount
  * \param erasures
  * \param ecap
@@ -162,7 +166,7 @@ calculateUEC(int errorCount, int erasures, int ecap)
 #undef CHKPASS
 #define CHKPASS { if(passFail == DmtxFail) return DmtxFail; }
 static DmtxPassFail
-RsDecode(unsigned char *code, int sizeIdx, int fix, double *uec)
+RsDecode(unsigned char *code, int sizeIdx, int fix, double *uec, DmtxErasures *erasures)
 {
    int i;
    int blockStride, blockIdx;
@@ -248,11 +252,12 @@ RsDecode(unsigned char *code, int sizeIdx, int fix, double *uec)
          fprintf(stdout, "After RsRepairErrors\n");
 
          /* Compute UEC in the block */
-         double blockUEC = calculateUEC(loc.length, 0, blockMaxCorrectable );
+         double blockUEC = calculateUEC(loc.length, erasures->count, blockMaxCorrectable );
          *uec = blockUEC;
       } else {
         /* No errors in the block */
-          *uec = 1.0;
+        fprintf(stdout, "No errors in the block\n");
+         *uec = 1.0;
       }
 
       /*

@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
 
    // dmtxEncodeDestroy(&enc);
 
-   FILE *fp = fopen("./images/datamatrix_2d_8.png", "rb");
+   FILE *fp = fopen("/workspaces/libdmtx/test/simple_test/images/datamatrix_2d_8.png", "rb");
    if (!fp)
    {
       perror("File opening failed");
@@ -230,61 +230,65 @@ int main(int argc, char *argv[])
    //    if (i%width==width-1){
    //       fprintf(stdout, "\n");
    //    }
-   // } 
-   reg = dmtxRegionFindNext(dec, NULL);
-   fprintf(stdout, "reg->symbolRows: \"%d\"\n", reg->symbolRows);
-   fprintf(stdout, "reg->symbolCols: \"%d\"\n", reg->symbolCols);
-   fprintf(stdout, "reg->mappingRows: \"%d\"\n", reg->mappingRows);
-   fprintf(stdout, "reg->mappingCols: \"%d\"\n", reg->mappingCols);
+   // }
+   if (reg != NULL) {
+      reg = dmtxRegionFindNext(dec, NULL);
+      fprintf(stdout, "reg->symbolRows: \"%d\"\n", reg->symbolRows);
+      fprintf(stdout, "reg->symbolCols: \"%d\"\n", reg->symbolCols);
+      fprintf(stdout, "reg->mappingRows: \"%d\"\n", reg->mappingRows);
+      fprintf(stdout, "reg->mappingCols: \"%d\"\n", reg->mappingCols);
 
-   DmtxVector2 p;
-   for (int i = 1; i < reg->symbolCols + 1; i++)
-   {
-      printf("\n");
-      for (int j = 1; j < reg->symbolRows; j++)
+      DmtxVector2 p;
+      for (int i = 1; i < reg->symbolCols + 1; i++)
       {
-         p.X = ((1.0 / reg->symbolCols) * (j - 0.8));
-         p.Y = (1.0 / reg->symbolRows) * (17 - i);
-         dmtxMatrix3VMultiplyBy(&p, reg->fit2raw);
-         // printf("%dx%d \n", (int)(p.X), (int)(p.Y));
-         dmtxDecodeGetPixelValue(dec, (int)(p.X + 0.5), (int)(p.Y + 0.5),
-                                 colorPlane, &colorTmp);
-         printf("%dx%d", (int)(p.X + 0.5), (int)(p.Y + 0.5));
-         printf("  %d \t", colorTmp);
+         printf("\n");
+         for (int j = 1; j < reg->symbolRows; j++)
+         {
+            p.X = ((1.0 / reg->symbolCols) * (j - 0.8));
+            p.Y = (1.0 / reg->symbolRows) * (17 - i);
+            dmtxMatrix3VMultiplyBy(&p, reg->fit2raw);
+            // printf("%dx%d \n", (int)(p.X), (int)(p.Y));
+            dmtxDecodeGetPixelValue(dec, (int)(p.X + 0.5), (int)(p.Y + 0.5),
+                                    colorPlane, &colorTmp);
+            printf("%dx%d", (int)(p.X + 0.5), (int)(p.Y + 0.5));
+            printf("  %d \t", colorTmp);
+         }
       }
+      DmtxVector2 p1;
+      p1.X = 0.0;
+      p1.Y = 0.0;
+      dmtxMatrix3VMultiplyBy(&p1, reg->fit2raw);
+      // printf("%dx%d \n", (int)(p.X), (int)(p.Y));
+      bottom_left_cordinates[0] = (int)(p1.X);
+      bottom_left_cordinates[1] = (int)(p1.Y);
+      printf("\nBottom left cordinates: %d, %d\n", bottom_left_cordinates[1], bottom_left_cordinates[0]);
+
+      p1.X = 0.0;
+      p1.Y = 1.0;
+      dmtxMatrix3VMultiplyBy(&p1, reg->fit2raw);
+      // printf("%dx%d \n", (int)(p.X), (int)(p.Y));
+      top_left_cordinates[0] = (int)(p1.X);
+      top_left_cordinates[1] = (int)(p1.Y);
+      printf("\nTop left cordinates: %d, %d\n", top_left_cordinates[0], top_left_cordinates[1]);
+
+      p1.X = 1.0;
+      p1.Y = 0.0;
+      dmtxMatrix3VMultiplyBy(&p1, reg->fit2raw);
+      // printf("%dx%d \n", (int)(p.X), (int)(p.Y));
+      bottom_right_cordinates[0] = (int)(p1.X);
+      bottom_right_cordinates[1] = (int)(p1.Y);
+      printf("\nBottom right cordinates: %d, %d\n", bottom_right_cordinates[0], bottom_right_cordinates[1]);
+
+      p1.X = 1.0;
+      p1.Y = 1.0;
+      dmtxMatrix3VMultiplyBy(&p1, reg->fit2raw);
+      // printf("%dx%d \n", (int)(p.X), (int)(p.Y));
+      top_right_cordinates[0] = (int)(p1.X);
+      top_right_cordinates[1] = (int)(p1.Y);
+      printf("\nTop right cordinates: %d, %d\n", top_right_cordinates[0], top_right_cordinates[1]);
+   }else{
+      fprintf(stdout, "No region found\n");
    }
-   DmtxVector2 p1;
-   p1.X = 0.0;
-   p1.Y = 0.0;
-   dmtxMatrix3VMultiplyBy(&p1, reg->fit2raw);
-   // printf("%dx%d \n", (int)(p.X), (int)(p.Y));
-   bottom_left_cordinates[0] = (int)(p1.X);
-   bottom_left_cordinates[1] = (int)(p1.Y);
-   printf("\nBottom left cordinates: %d, %d\n", bottom_left_cordinates[1], bottom_left_cordinates[0]);
-
-   p1.X = 0.0;
-   p1.Y = 1.0;
-   dmtxMatrix3VMultiplyBy(&p1, reg->fit2raw);
-   // printf("%dx%d \n", (int)(p.X), (int)(p.Y));
-   top_left_cordinates[0] = (int)(p1.X);
-   top_left_cordinates[1] = (int)(p1.Y);
-   printf("\nTop left cordinates: %d, %d\n", top_left_cordinates[0], top_left_cordinates[1]);
-
-   p1.X = 1.0;
-   p1.Y = 0.0;
-   dmtxMatrix3VMultiplyBy(&p1, reg->fit2raw);
-   // printf("%dx%d \n", (int)(p.X), (int)(p.Y));
-   bottom_right_cordinates[0] = (int)(p1.X);
-   bottom_right_cordinates[1] = (int)(p1.Y);
-   printf("\nBottom right cordinates: %d, %d\n", bottom_right_cordinates[0], bottom_right_cordinates[1]);
-
-   p1.X = 1.0;
-   p1.Y = 1.0;
-   dmtxMatrix3VMultiplyBy(&p1, reg->fit2raw);
-   // printf("%dx%d \n", (int)(p.X), (int)(p.Y));
-   top_right_cordinates[0] = (int)(p1.X);
-   top_right_cordinates[1] = (int)(p1.Y);
-   printf("\nTop right cordinates: %d, %d\n", top_right_cordinates[0], top_right_cordinates[1]);
 
    // traverseQuadrilateral(bottom_left_cordinates[0], bottom_left_cordinates[1], top_left_cordinates[0], top_left_cordinates[1], bottom_right_cordinates[0], bottom_right_cordinates[1], top_right_cordinates[0], top_right_cordinates[1], reg, dec);
    if (reg != NULL)
@@ -299,7 +303,7 @@ int main(int argc, char *argv[])
       fprintf(stdout, "msg->arraySize :  \"%zd\"\n", msg->arraySize);
       fprintf(stdout, "msg->codeSize  :  \"%zd\"\n", msg->codeSize);
       fprintf(stdout, "msg->outputSize:  \"%zd\"\n", msg->outputSize);
-      fprintf(stdout, "msg->uec :  \"%f\"\n", *msg->uec);
+      fprintf(stdout, "msg->uec :  \"%f\"\n", msg->uec);
 
       int oned = sqrt(msg->arraySize);
       for (int i = 0; i < msg->arraySize; i++)

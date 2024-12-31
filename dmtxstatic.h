@@ -154,7 +154,8 @@ static DmtxPassFail BresLineStep(DmtxBresLine *line, int travel, int outward);
 
 /* dmtxdecode.c */
 static void TallyModuleJumps(DmtxDecode *dec, DmtxRegion *reg, int tally[][24], int xOrigin, int yOrigin, int mapWidth, int mapHeight, DmtxDirection dir);
-static DmtxPassFail PopulateArrayFromMatrix(DmtxDecode *dec, DmtxRegion *reg, DmtxMessage *msg);
+static DmtxPassFail PopulateArrayFromMatrix(DmtxDecode *dec, DmtxRegion *reg, DmtxMessage *msg, DmtxErasures *erasures);
+static int MapDataModuleToCodeword(int sizeIdx, int row, int col);
 
 /* dmtxdecodescheme.c */
 static DmtxPassFail DecodeDataStream(DmtxMessage *msg, int sizeIdx, unsigned char *outputStart);
@@ -185,7 +186,7 @@ static void PlaceModule(unsigned char *modules, int mappingRows, int mappingCols
 
 /* dmtxreedsol.c */
 static DmtxPassFail RsEncode(DmtxMessage *message, int sizeIdx);
-static DmtxPassFail RsDecode(unsigned char *code, int sizeIdx, int fix, double *uec);
+static DmtxPassFail RsDecode(unsigned char *code, int sizeIdx, int fix, double *uec, DmtxErasures *erasures);
 static double calculateUEC(int errorCount, int erasures, int ecap);
 static DmtxPassFail RsGenPoly(DmtxByteList *gen, int errorWordCount);
 static DmtxBoolean RsComputeSyndromes(DmtxByteList *syn, const DmtxByteList *rec, int blockErrorWords);
