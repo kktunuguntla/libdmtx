@@ -590,7 +590,7 @@ dmtxDecodeCreateDiagnostic(DmtxDecode *dec, int *totalBytes, int *headerBytes, i
  * \return void
  */
 static void
-TallyModuleJumps(DmtxDecode *dec, DmtxRegion *reg, int tally[][24], int xOrigin, int yOrigin, int mapWidth, int mapHeight, DmtxDirection dir)
+TallyModuleJumps(DmtxDecode *dec, DmtxRegion *reg, int tally[][24], int xOrigin, int yOrigin, int mapWidth, int mapHeight, DmtxDirection dir, DmtxErasures *erasures)
 {
    int extent, weight;
    int travelStep;
@@ -663,7 +663,21 @@ TallyModuleJumps(DmtxDecode *dec, DmtxRegion *reg, int tally[][24], int xOrigin,
 
          color = ReadModuleColor(dec, reg, symbolRow, symbolCol, reg->sizeIdx, reg->flowBegin.plane);
          tModule = (darkOnLight) ? reg->offColor - color : color - reg->offColor;
+         // Check if module value deviates significantly from both expected states
+         int diffFromOn = abs(color - reg->onColor);
+         int diffFromOff = abs(color - reg->offColor);
 
+         if(diffFromOn > jumpThreshold && diffFromOff > jumpThreshold) {
+             mapRow = symbolRow - yOrigin;
+             mapCol = symbolCol - xOrigin;
+
+             // Mark potential erasure location
+             int pos = MapDataModuleToCodeword(reg->sizeIdx, mapRow, mapCol);
+             if(pos != DmtxUndefined) {
+               fprintf(stdout, "Erasure count: %d\n", erasures->count);
+               erasures->locations[erasures->count++] = pos;
+             }
+         }
          if(statusPrev == DmtxModuleOnRGB) {
             if(tModule < tPrev - jumpThreshold){
                statusModule = DmtxModuleOff;
@@ -713,8 +727,8 @@ PopulateArrayFromMatrix(DmtxDecode *dec, DmtxRegion *reg, DmtxMessage *msg, Dmtx
    int mapCol, mapRow;
    int colTmp, rowTmp, idx;
    int tally[24][24]; /* Large enough to map largest single region */
-   double erasureThresholdLow = 0.4; // Extreme low threshold for erasure detection
-   double erasureThresholdHigh = 0.6; // Extreme high threshold for erasure detection
+   // double erasureThresholdLow = 0.4; // Extreme low threshold for erasure detection
+   // double erasureThresholdHigh = 0.6; // Extreme high threshold for erasure detection
 
 /* memset(msg->array, 0x00, msg->arraySize); */
 
@@ -763,16 +777,16 @@ PopulateArrayFromMatrix(DmtxDecode *dec, DmtxRegion *reg, DmtxMessage *msg, Dmtx
          //fprintf(stdout, "libdmtx::PopulateArrayFromMatrix::xOrigin: %d\n", xOrigin);
 
          memset(tally, 0x00, 24 * 24 * sizeof(int));
-         TallyModuleJumps(dec, reg, tally, xOrigin, yOrigin, mapWidth, mapHeight, DmtxDirUp);
-         TallyModuleJumps(dec, reg, tally, xOrigin, yOrigin, mapWidth, mapHeight, DmtxDirLeft);
-         TallyModuleJumps(dec, reg, tally, xOrigin, yOrigin, mapWidth, mapHeight, DmtxDirDown);
-         TallyModuleJumps(dec, reg, tally, xOrigin, yOrigin, mapWidth, mapHeight, DmtxDirRight);
+         TallyModuleJumps(dec, reg, tally, xOrigin, yOrigin, mapWidth, mapHeight, DmtxDirUp, erasures);
+         TallyModuleJumps(dec, reg, tally, xOrigin, yOrigin, mapWidth, mapHeight, DmtxDirLeft, erasures);
+         TallyModuleJumps(dec, reg, tally, xOrigin, yOrigin, mapWidth, mapHeight, DmtxDirDown, erasures);
+         TallyModuleJumps(dec, reg, tally, xOrigin, yOrigin, mapWidth, mapHeight, DmtxDirRight, erasures);
 
          /* Decide module status based on final tallies */
          for(mapRow = 0; mapRow < mapHeight; mapRow++) {
          //for(mapRow = mapHeight-1; mapRow >= 0; mapRow--) {
             for(mapCol = 0; mapCol < mapWidth; mapCol++) {
-               double confidence = tally[mapRow][mapCol]/(double)weightFactor;
+               // double confidence = tally[mapRow][mapCol]/(double)weightFactor;
                
                rowTmp = (yRegionCount * mapHeight) + mapRow;
                rowTmp = yRegionTotal * mapHeight - rowTmp - 1;
@@ -790,26 +804,26 @@ PopulateArrayFromMatrix(DmtxDecode *dec, DmtxRegion *reg, DmtxMessage *msg, Dmtx
 
                msg->array[idx] |= DmtxModuleAssigned;
                // Check if module confidence is in extreme ranges indicating potential damage
-               if(confidence < erasureThresholdLow || confidence > erasureThresholdHigh) {
-                  // Mark this module as both erased and processed in the message array
-                  msg->array[idx] = DmtxModuleErased | DmtxModuleAssigned;
-                  
-                  // Convert the module's physical position to its corresponding codeword position
-                  // using Data Matrix ECC 200 mapping rules
-                  int codewordPosition = MapDataModuleToCodeword(reg->sizeIdx, rowTmp, colTmp);
-                  // If this module is part of the data region (not alignment pattern)
-                  // store its position for Reed-Solomon error correction
-                  if(codewordPosition != DmtxUndefined) {
-                      erasures->locations[erasures->count++] = codewordPosition;
-                  }
-               } else {
-                  // Module has normal confidence level - determine if it's ON or OFF
-                  // confidence >= 0.5 means module is ON (dark)
-                  // confidence < 0.5 means module is OFF (light)
-                  msg->array[idx] = (confidence >= 0.5) ? 
-                      (DmtxModuleOnRGB | DmtxModuleAssigned) : 
-                      (DmtxModuleOff | DmtxModuleAssigned);
-               }
+               // if(confidence < erasureThresholdLow || confidence > erasureThresholdHigh) {
+               //    // Mark this module as both erased and processed in the message array
+               //    msg->array[idx] = DmtxModuleErased | DmtxModuleAssigned;
+               //    
+               //    // Convert the module's physical position to its corresponding codeword position
+               //    // using Data Matrix ECC 200 mapping rules
+               //    int codewordPosition = MapDataModuleToCodeword(reg->sizeIdx, rowTmp, colTmp);
+               //    // If this module is part of the data region (not alignment pattern)
+               //    // store its position for Reed-Solomon error correction
+               //    if(codewordPosition != DmtxUndefined) {
+               //        erasures->locations[erasures->count++] = codewordPosition;
+               //    }
+               // } else {
+               //    // Module has normal confidence level - determine if it's ON or OFF
+               //    // confidence >= 0.5 means module is ON (dark)
+               //    // confidence < 0.5 means module is OFF (light)
+               //    msg->array[idx] = (confidence >= 0.5) ? 
+               //        (DmtxModuleOnRGB | DmtxModuleAssigned) : 
+               //        (DmtxModuleOff | DmtxModuleAssigned);
+               // }
             }
             //fprintf(stdout, "\n");
          }

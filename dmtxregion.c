@@ -70,8 +70,10 @@ dmtxRegionFindNext(DmtxDecode *dec, DmtxTime *timeout)
    /* Continue until we find a region or run out of chances */
    for(;;) {
       locStatus = PopGridLocation(&(dec->grid), &loc);
-      if(locStatus == DmtxRangeEnd)
+      if(locStatus == DmtxRangeEnd){
+         fprintf(stderr, "dmtxRegionFindNext: No more grid locations\n");
          break;
+      }
 
       /* Scan location for presence of valid barcode region */
       reg = dmtxRegionScanPixel(dec, loc.X, loc.Y);
@@ -79,8 +81,10 @@ dmtxRegionFindNext(DmtxDecode *dec, DmtxTime *timeout)
          return reg;
 
       /* Ran out of time? */
-      if(timeout != NULL && dmtxTimeExceeded(*timeout))
+      if(timeout != NULL && dmtxTimeExceeded(*timeout)){
+         fprintf(stderr, "dmtxRegionFindNext: Timeout\n");
          break;
+      }
    }
 
    return NULL;

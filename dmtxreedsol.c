@@ -192,7 +192,7 @@ RsDecode(unsigned char *code, int sizeIdx, int fix, double *uec, DmtxErasures *e
    symbolErrorWords = dmtxGetSymbolAttribute(DmtxSymAttribSymbolErrorWords, sizeIdx);
    symbolTotalWords = symbolDataWords + symbolErrorWords;
 
-   double minUEC = 1.0;
+   // double minUEC = 1.0;
    fprintf(stdout, "libdmtx::RsDecode() \n");
    fprintf(stdout, "Code: %s \n", code);
 
@@ -252,6 +252,9 @@ RsDecode(unsigned char *code, int sizeIdx, int fix, double *uec, DmtxErasures *e
          fprintf(stdout, "After RsRepairErrors\n");
 
          /* Compute UEC in the block */
+         fprintf(stdout, "Error count: %d\n", loc.length);
+         fprintf(stdout, "Erasures count: %d\n", erasures->count);
+         fprintf(stdout, "Block max correctable: %d\n", blockMaxCorrectable);
          double blockUEC = calculateUEC(loc.length, erasures->count, blockMaxCorrectable );
          *uec = blockUEC;
       } else {

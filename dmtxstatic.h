@@ -153,7 +153,7 @@ static DmtxPassFail BresLineStep(DmtxBresLine *line, int travel, int outward);
 /*static void WriteDiagnosticImage(DmtxDecode *dec, DmtxRegion *reg, char *imagePath);*/
 
 /* dmtxdecode.c */
-static void TallyModuleJumps(DmtxDecode *dec, DmtxRegion *reg, int tally[][24], int xOrigin, int yOrigin, int mapWidth, int mapHeight, DmtxDirection dir);
+static void TallyModuleJumps(DmtxDecode *dec, DmtxRegion *reg, int tally[][24], int xOrigin, int yOrigin, int mapWidth, int mapHeight, DmtxDirection dir, DmtxErasures *erasures);
 static DmtxPassFail PopulateArrayFromMatrix(DmtxDecode *dec, DmtxRegion *reg, DmtxMessage *msg, DmtxErasures *erasures);
 static int MapDataModuleToCodeword(int sizeIdx, int row, int col);
 
