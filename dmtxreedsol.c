@@ -252,10 +252,10 @@ RsDecode(unsigned char *code, int sizeIdx, int fix, double *uec, DmtxErasures *e
          fprintf(stdout, "After RsRepairErrors\n");
 
          /* Compute UEC in the block */
-         fprintf(stdout, "Error count: %d\n", loc.length);
+         fprintf(stdout, "Error count: %d\n", error);
          fprintf(stdout, "Erasures count: %d\n", erasures->count);
          fprintf(stdout, "Block max correctable: %d\n", blockMaxCorrectable);
-         double blockUEC = calculateUEC(loc.length, erasures->count, blockMaxCorrectable );
+         double blockUEC = calculateUEC(error, erasures->count, blockMaxCorrectable );
          *uec = blockUEC;
       } else {
         /* No errors in the block */
