@@ -330,7 +330,7 @@ CacheFillQuad(DmtxDecode *dec, DmtxPixelLoc p0, DmtxPixelLoc p1, DmtxPixelLoc p2
 extern DmtxMessage *
 dmtxDecodeMatrixRegion(DmtxDecode *dec, DmtxRegion *reg, int fix)
 {
-   fprintf(stdout, "libdmtx::dmtxDecodeMatrixRegion()\n");
+   // fprintf(stdout, "libdmtx::dmtxDecodeMatrixRegion()\n");
    DmtxMessage *msg;
    DmtxVector2 topLeft, topRight, bottomLeft, bottomRight;
    DmtxPixelLoc pxTopLeft, pxTopRight, pxBottomLeft, pxBottomRight;
@@ -347,7 +347,7 @@ dmtxDecodeMatrixRegion(DmtxDecode *dec, DmtxRegion *reg, int fix)
       return NULL;
    }
 
-   fprintf(stdout, "Message created\n");
+   // fprintf(stdout, "Message created\n");
    msg->fnc1 = dec->fnc1;
 
    topLeft.X = bottomLeft.X = topLeft.Y = topRight.Y = -0.1;
@@ -369,7 +369,7 @@ dmtxDecodeMatrixRegion(DmtxDecode *dec, DmtxRegion *reg, int fix)
 
    CacheFillQuad(dec, pxTopLeft, pxTopRight, pxBottomRight, pxBottomLeft);
 
-   fprintf(stdout, "Dmtx message must be return by decoded populated array \n");
+   // fprintf(stdout, "Dmtx message must be return by decoded populated array \n");
    return dmtxDecodePopulatedArray(reg->sizeIdx, msg, fix, &erasures);
 }
 
@@ -407,8 +407,8 @@ dmtxDecodePopulatedArray(int sizeIdx, DmtxMessage *msg, int fix, DmtxErasures *e
     
    ModulePlacementEcc200(msg->array, msg->code, sizeIdx, DmtxModuleOnRed | DmtxModuleOnGreen | DmtxModuleOnBlue);
 
-   fprintf(stdout, "libdmtx::dmtxDecodePopulatedArray() \n");
-   fprintf(stdout, "erasures->count = %d \n", erasures->count);
+   // fprintf(stdout, "libdmtx::dmtxDecodePopulatedArray() \n");
+   // fprintf(stdout, "erasures->count = %d \n", erasures->count);
    if(RsDecode(msg->code, sizeIdx, fix, &msg->uec, erasures) == DmtxFail){
       fprintf(stdout, "RsDecode failed");
       dmtxMessageDestroy(&msg);

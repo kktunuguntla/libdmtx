@@ -24,7 +24,7 @@ extern DmtxMessage *
 dmtxMessageCreate(int sizeIdx, int symbolFormat)
 {
    DmtxMessage *message;
-   fprintf(stdout, "libdmtx::dmtxMessageCreate() \n");
+   // fprintf(stdout, "libdmtx::dmtxMessageCreate() \n");
    int mappingRows, mappingCols;
 
    assert(symbolFormat == DmtxFormatMatrix || symbolFormat == DmtxFormatMosaic);
@@ -78,7 +78,7 @@ dmtxMessageCreate(int sizeIdx, int symbolFormat)
    // }
    message->uec = 5.0;
 
-   fprintf(stdout, "Allocated memory for dmtx message \n");
+   // fprintf(stdout, "Allocated memory for dmtx message \n");
    return message;
 }
 

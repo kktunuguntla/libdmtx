@@ -71,7 +71,7 @@ dmtxRegionFindNext(DmtxDecode *dec, DmtxTime *timeout)
    for(;;) {
       locStatus = PopGridLocation(&(dec->grid), &loc);
       if(locStatus == DmtxRangeEnd){
-         fprintf(stderr, "dmtxRegionFindNext: No more grid locations\n");
+         // fprintf(stderr, "dmtxRegionFindNext: No more grid locations\n");
          break;
       }
 

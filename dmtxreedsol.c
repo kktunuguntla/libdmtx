@@ -193,13 +193,13 @@ RsDecode(unsigned char *code, int sizeIdx, int fix, double *uec, DmtxErasures *e
    symbolTotalWords = symbolDataWords + symbolErrorWords;
 
    // double minUEC = 1.0;
-   fprintf(stdout, "libdmtx::RsDecode() \n");
-   fprintf(stdout, "Code: %s \n", code);
+   // fprintf(stdout, "libdmtx::RsDecode() \n");
+   // fprintf(stdout, "Code: %s \n", code);
 
    /* For each interleaved block */
    for(blockIdx = 0; blockIdx < blockStride; blockIdx++)
    {
-      fprintf(stdout, "In for loop for each interleaved block \n");
+      // fprintf(stdout, "In for loop for each interleaved block \n");
       /* Data word count depends on blockIdx due to special case at 144x144 */
       blockDataWords = dmtxGetBlockDataSize(sizeIdx, blockIdx);
 //      blockTotalWords = blockErrorWords + blockDataWords;
@@ -225,31 +225,31 @@ RsDecode(unsigned char *code, int sizeIdx, int fix, double *uec, DmtxErasures *e
 
       /* Compute syndromes (syn) */
       error = RsComputeSyndromes(&syn, &rec, blockErrorWords);
-      fprintf(stdout, "Error %d\n", error);
-      fprintf(stdout, "LOC: %d\n", loc.length);
-      fprintf(stdout, "Elp: %d\n", elp.length);
+      // fprintf(stdout, "Error %d\n", error);
+      // fprintf(stdout, "LOC: %d\n", loc.length);
+      // fprintf(stdout, "Elp: %d\n", elp.length);
 
       /* Error(s) detected: Attempt repair */
       if(error)
       {
          /* Find error locator polynomial (elp) */
-         fprintf(stdout, "Before RsFindErrorLocatorPoly\n");
+         // fprintf(stdout, "Before RsFindErrorLocatorPoly\n");
          repairable = RsFindErrorLocatorPoly(&elp, &syn, blockErrorWords, blockMaxCorrectable);
-         fprintf(stdout, "After RsFindErrorLocatorPoly: repairable = %d\n", repairable);
+         // fprintf(stdout, "After RsFindErrorLocatorPoly: repairable = %d\n", repairable);
          if(!repairable)
             return DmtxFail;
 
          /* Find error positions (loc) */
-         fprintf(stdout, "Before RsFindErrorLocations\n");
+         // fprintf(stdout, "Before RsFindErrorLocations\n");
          repairable = RsFindErrorLocations(&loc, &elp);
-         fprintf(stdout, "After RsFindErrorLocations: repairable = %d\n", repairable);
+         // fprintf(stdout, "After RsFindErrorLocations: repairable = %d\n", repairable);
          if(!repairable)
             return DmtxFail;
 
          /* Find error values and repair */
-         fprintf(stdout, "Before RsRepairErrors\n");
+         // fprintf(stdout, "Before RsRepairErrors\n");
          RsRepairErrors(&rec, &loc, &elp, &syn);
-         fprintf(stdout, "After RsRepairErrors\n");
+         // fprintf(stdout, "After RsRepairErrors\n");
 
          /* Compute UEC in the block */
          fprintf(stdout, "Error count: %d\n", error);
@@ -259,7 +259,7 @@ RsDecode(unsigned char *code, int sizeIdx, int fix, double *uec, DmtxErasures *e
          *uec = blockUEC;
       } else {
         /* No errors in the block */
-        fprintf(stdout, "No errors in the block\n");
+      //   fprintf(stdout, "No errors in the block\n");
          *uec = 1.0;
       }
 
@@ -478,7 +478,7 @@ RsFindErrorLocations(DmtxByteList *loc, const DmtxByteList *elp)
       }
    }
 
-   fprintf(stdout, "LOC length %d and Lamda %d \n", loc->length, lambda);
+   // fprintf(stdout, "LOC length %d and Lamda %d \n", loc->length, lambda);
    return (loc->length == lambda) ? DmtxTrue : DmtxFalse;
 }
 
