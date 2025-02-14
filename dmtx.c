@@ -78,6 +78,7 @@
 #include "dmtxreedsol.c"
 #include "dmtxscangrid.c"
 
+#include "dmtxmapping.c"
 #include "dmtximage.c"
 #include "dmtxbytelist.c"
 #include "dmtxtime.c"

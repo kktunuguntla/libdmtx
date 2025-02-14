@@ -23,6 +23,7 @@
  */
 
 #include <stdio.h> // for snprintf
+#include "dmtx.h"  // Add this line to include DmtxDecode definition
 
 extern DmtxDecode *
 dmtxDecodeCreate(DmtxImage *img, int scale)
@@ -350,6 +351,13 @@ dmtxDecodeMatrixRegion(DmtxDecode *dec, DmtxRegion *reg, int fix)
    // fprintf(stdout, "Message created\n");
    msg->fnc1 = dec->fnc1;
 
+   /* --- NEW: Build mapping table for all codewords --- */
+   msg->totalCodewords = MapCompleteCodewordModules(reg->sizeIdx, &(msg->mappingTable));
+   if(msg->totalCodewords < 0) {
+       dmtxMessageDestroy(&msg);
+       return NULL;
+   }
+
    topLeft.X = bottomLeft.X = topLeft.Y = topRight.Y = -0.1;
    topRight.X = bottomRight.X = bottomLeft.Y = bottomRight.Y = 1.1;
 
@@ -370,7 +378,36 @@ dmtxDecodeMatrixRegion(DmtxDecode *dec, DmtxRegion *reg, int fix)
    CacheFillQuad(dec, pxTopLeft, pxTopRight, pxBottomRight, pxBottomLeft);
 
    // fprintf(stdout, "Dmtx message must be return by decoded populated array \n");
-   return dmtxDecodePopulatedArray(reg->sizeIdx, msg, fix, &erasures);
+   msg = dmtxDecodePopulatedArray(reg->sizeIdx, msg, fix, &erasures);
+   if(msg == NULL){
+      fprintf(stdout, "dmtxDecodePopulatedArray failed");
+      dmtxMessageDestroy(&msg);
+      return NULL;
+   }
+   /* --- NEW: Copy error indices from global tracker into msg --- */
+   extern int errorCountGlobal;
+   extern int errorIndicesGlobal[MAX_ERROR_TRACK];
+   if(errorCountGlobal > 0) {
+       msg->errorCount = errorCountGlobal;
+       msg->errorIndices = (int *)malloc(errorCountGlobal * sizeof(int));
+       if(msg->errorIndices != NULL)
+           memcpy(msg->errorIndices, errorIndicesGlobal, errorCountGlobal * sizeof(int));
+   } else {
+       msg->errorCount = 0;
+       msg->errorIndices = NULL;
+   }
+   
+   /* --- Export mapping and error data to CSV files for Python visualization --- */
+   WriteMappingTableCSV("mapping_table.csv", msg->mappingTable, msg->totalCodewords);
+   if(msg->errorCount > 0)
+       WriteErrorIndicesCSV("error_indices.csv", msg->errorIndices, msg->errorCount);
+   
+   /* Continue with decoding the data stream */
+   if(DecodeDataStream(msg, reg->sizeIdx, NULL) == DmtxFail) {
+       dmtxMessageDestroy(&msg);
+       return NULL;
+   }
+   return msg;
 }
 
 /**
@@ -851,6 +888,7 @@ MapDataModuleToCodeword(int sizeIdx, int row, int col)
     // Calculate codeword position using standard Data Matrix mapping
     int codewordPosition = (moduleRow * dataRegionCols + moduleCol) * interleavedBlocks;
     codewordPosition += (regionRow * dataRegionCols + regionCol);
-    
+
+    fprintf(stdout, "CodewordPosition %d \n", codewordPosition);    
     return codewordPosition;
 }

@@ -249,6 +249,16 @@ typedef struct DmtxVector2_struct {
 } DmtxVector2;
 
 /**
+* @struct DmtxModuleCoord
+ * @brief DmtxModuleCoord
+*/
+typedef struct DmtxModuleCoord_struct {
+    int row;
+    int col;
+} DmtxModuleCoord;
+
+
+/**
  * @struct DmtxRay2
  * @brief DmtxRay2
  */
@@ -407,6 +417,10 @@ typedef struct DmtxMessage_struct {
    unsigned char   *array;         /* Pointer to internal representation of Data Matrix modules */
    unsigned char   *code;          /* Pointer to internal storage of code words (data and error) */
    unsigned char   *output;        /* Pointer to internal storage of decoded output */
+   int             totalCodewords; /* Total number of codewords (data + error) */
+   DmtxModuleCoord *mappingTable;  /* Mapping table: an array of ModuleCoord entries, size = totalCodewords * 8 */
+   int             errorCount;     /* Number of codewords that were corrected during error correction */
+   int             *errorIndices;  /* Array (length = errorCount) containing the indices of codewords that were corrected */
 } DmtxMessage;
 
 /**

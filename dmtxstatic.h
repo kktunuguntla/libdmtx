@@ -59,6 +59,10 @@
 #undef max
 #define max(X,Y) (((X) > (Y)) ? (X) : (Y))
 
+#define MAX_ERROR_TRACK 1024
+static int errorIndicesGlobal[MAX_ERROR_TRACK];
+static int errorCountGlobal = 0;
+
 typedef enum {
    DmtxEncodeNormal,  /* Use normal scheme behavior (e.g., ASCII auto) */
    DmtxEncodeCompact, /* Use only compact format within scheme */
@@ -183,6 +187,17 @@ static void PatternShapeSpecial3(unsigned char *modules, int mappingRows, int ma
 static void PatternShapeSpecial4(unsigned char *modules, int mappingRows, int mappingCols, unsigned char *codeword, int moduleOnColor);
 static void PlaceModule(unsigned char *modules, int mappingRows, int mappingCols, int row, int col,
       unsigned char *codeword, int mask, int moduleOnColor);
+
+/* dmtxmapping.c */
+static int MapCompleteCodewordModules(int sizeIdx, DmtxModuleCoord **mappingTable);
+static void RecordPatternShapeStandard(DmtxModuleCoord *mappingTable, int cwIdx, int mappingCols, int row, int col);
+static void RecordPatternShapeSpecial1(DmtxModuleCoord *mappingTable, int cwIdx, int mappingRows, int mappingCols);
+static void RecordPatternShapeSpecial2(DmtxModuleCoord *mappingTable, int cwIdx, int mappingRows, int mappingCols);
+static void RecordPatternShapeSpecial3(DmtxModuleCoord *mappingTable, int cwIdx, int mappingRows, int mappingCols);
+static void RecordPatternShapeSpecial4(DmtxModuleCoord *mappingTable, int cwIdx, int mappingRows, int mappingCols);
+static void RecordModule(DmtxModuleCoord *mappingTable, int cwIdx, int bit, int mappingCols, int row, int col);
+static void WriteMappingTableCSV(const char *filename, DmtxModuleCoord *mappingTable, int totalCodewords);
+static void WriteErrorIndicesCSV(const char *filename, int *errorIndices, int errorCount);
 
 /* dmtxreedsol.c */
 static DmtxPassFail RsEncode(DmtxMessage *message, int sizeIdx);

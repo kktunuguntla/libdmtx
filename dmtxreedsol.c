@@ -192,9 +192,19 @@ RsDecode(unsigned char *code, int sizeIdx, int fix, double *uec, DmtxErasures *e
    symbolErrorWords = dmtxGetSymbolAttribute(DmtxSymAttribSymbolErrorWords, sizeIdx);
    symbolTotalWords = symbolDataWords + symbolErrorWords;
 
+   /* Clear global error tracker */
+   //int errorCountGlobal = 0;
+
    // double minUEC = 1.0;
    // fprintf(stdout, "libdmtx::RsDecode() \n");
    // fprintf(stdout, "Code: %s \n", code);
+   // fprintf(stdout, "SizeIdx: %d \n", sizeIdx);
+   // fprintf(stdout, "BlockStride: %d \n", blockStride);
+   // fprintf(stdout, "BlockErrorWords: %d \n", blockErrorWords);
+   // fprintf(stdout, "BlockMaxCorrectable: %d \n", blockMaxCorrectable);
+   // fprintf(stdout, "SymbolDataWords: %d \n", symbolDataWords);
+   // fprintf(stdout, "SymbolErrorWords: %d \n", symbolErrorWords);
+   // fprintf(stdout, "SymbolTotalWords: %d \n", symbolTotalWords);
 
    /* For each interleaved block */
    for(blockIdx = 0; blockIdx < blockStride; blockIdx++)
@@ -251,11 +261,17 @@ RsDecode(unsigned char *code, int sizeIdx, int fix, double *uec, DmtxErasures *e
          RsRepairErrors(&rec, &loc, &elp, &syn);
          // fprintf(stdout, "After RsRepairErrors\n");
 
+         /* Record error index for this block.
+            Here we simply record blockIdx as an example.
+         */
+         if(errorCountGlobal < MAX_ERROR_TRACK)
+             errorIndicesGlobal[errorCountGlobal++] = blockIdx;
+
          /* Compute UEC in the block */
-         fprintf(stdout, "Error count: %d\n", error);
+         fprintf(stdout, "Error count: %d\n", loc.length);
          fprintf(stdout, "Erasures count: %d\n", erasures->count);
          fprintf(stdout, "Block max correctable: %d\n", blockMaxCorrectable);
-         double blockUEC = calculateUEC(error, erasures->count, blockMaxCorrectable );
+         double blockUEC = calculateUEC(loc.length, erasures->count, blockMaxCorrectable );
          *uec = blockUEC;
       } else {
         /* No errors in the block */
@@ -478,7 +494,7 @@ RsFindErrorLocations(DmtxByteList *loc, const DmtxByteList *elp)
       }
    }
 
-   // fprintf(stdout, "LOC length %d and Lamda %d \n", loc->length, lambda);
+   fprintf(stdout, "LOC length %d and Lamda %d \n", loc->length, lambda);
    return (loc->length == lambda) ? DmtxTrue : DmtxFalse;
 }
 

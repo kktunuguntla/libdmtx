@@ -77,7 +77,11 @@ dmtxMessageCreate(int sizeIdx, int symbolFormat)
    //    return NULL;
    // }
    message->uec = 5.0;
-
+   /* --- NEW FIELDS Initialization --- */
+   message->totalCodewords = 0;       /* Will be set later by the mapping routine */
+   message->mappingTable = NULL;      /* Will be allocated in the decode process */
+   message->errorCount = 0;           /* Initially no errors have been recorded */
+   message->errorIndices = NULL;      /* Will be allocated if errors are corrected */
    // fprintf(stdout, "Allocated memory for dmtx message \n");
    return message;
 }
@@ -101,6 +105,14 @@ dmtxMessageDestroy(DmtxMessage **msg)
 
    if((*msg)->output != NULL)
       free((*msg)->output);
+
+   /* Free the mapping table if allocated */
+   if((*msg)->mappingTable != NULL)
+       free((*msg)->mappingTable);
+   
+   /* Free the error indices array if allocated */
+   if((*msg)->errorIndices != NULL)
+       free((*msg)->errorIndices);
 
    free(*msg);
 
